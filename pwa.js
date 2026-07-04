@@ -122,6 +122,47 @@
     });
   }
 
+  var FIRST_CLOSE_KEY = 'isaura-first-close-done';
+
+  function sendFirstCloseNotification() {
+    if (Notification.permission !== 'granted') {
+      return;
+    }
+    pingServiceWorker('FIRST_CLOSE_NOTIFY');
+  }
+
+  function handleFirstClose() {
+    if (localStorage.getItem(FIRST_CLOSE_KEY)) {
+      return;
+    }
+    localStorage.setItem(FIRST_CLOSE_KEY, '1');
+
+    if (Notification.permission === 'granted') {
+      sendFirstCloseNotification();
+      return;
+    }
+
+    if (Notification.permission === 'default') {
+      enableNotifications().then(function (result) {
+        if (result === 'granted') {
+          sendFirstCloseNotification();
+        }
+      });
+    }
+  }
+
+  function setupFirstCloseNotification() {
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') {
+        handleFirstClose();
+      }
+    });
+
+    window.addEventListener('pagehide', function () {
+      handleFirstClose();
+    });
+  }
+
   function startForegroundNotifyCheck() {
     if (notifyCheckInterval) {
       clearInterval(notifyCheckInterval);
@@ -142,6 +183,7 @@
 
   function initPwa() {
     setupInstallPrompt();
+    setupFirstCloseNotification();
     updateNotifyBanner(Notification.permission);
 
     var enableBtn = document.getElementById('notify-enable');

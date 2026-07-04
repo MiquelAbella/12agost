@@ -1,4 +1,4 @@
-var CACHE_NAME = 'isaura-v1';
+var CACHE_NAME = 'isaura-v2';
 var CLUES_START = new Date(2026, 6, 12);
 var TOTAL_CLUES = 31;
 var NOTIFY_HOUR = 7;
@@ -83,6 +83,28 @@ function dbSet(key, value) {
       var req = tx.objectStore('meta').put(value, key);
       req.onsuccess = function () { resolve(); };
       req.onerror = function () { reject(req.error); };
+    });
+  });
+}
+
+function showFirstCloseNotification() {
+  if (Notification.permission !== 'granted') {
+    return Promise.resolve(false);
+  }
+
+  return dbGet('firstCloseNotify').then(function (sent) {
+    if (sent) {
+      return false;
+    }
+
+    return self.registration.showNotification('Isaura · El teu regal t\'espera', {
+      body: 'Fins demà! La propera pista t\'espera ♥',
+      icon: './assets/icon-192.svg',
+      badge: './assets/icon-192.svg',
+      tag: 'first-close',
+      data: { type: 'first-close' },
+    }).then(function () {
+      return dbSet('firstCloseNotify', true).then(function () { return true; });
     });
   });
 }
@@ -222,6 +244,10 @@ self.addEventListener('message', function (event) {
   if (event.data.type === 'SCHEDULE_NOTIFY') {
     scheduleNotifyAlarm();
     checkAndNotify();
+  }
+
+  if (event.data.type === 'FIRST_CLOSE_NOTIFY') {
+    event.waitUntil(showFirstCloseNotification());
   }
 });
 
