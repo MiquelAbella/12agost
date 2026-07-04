@@ -319,6 +319,47 @@ body {
   letter-spacing: 0.05em;
 }
 
+.pwa-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.pwa-actions.is-enabled .pwa-btn {
+  border-color: rgba(232, 164, 201, 0.35);
+  color: var(--accent-soft);
+}
+
+.pwa-btn {
+  padding: 0.65rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  background: var(--bg-card);
+  backdrop-filter: blur(8px);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pwa-btn:hover:not(:disabled) {
+  border-color: rgba(232, 164, 201, 0.35);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.pwa-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.pwa-btn-secondary {
+  color: var(--accent-soft);
+}
+
 @keyframes fadeUp {
   from {
     opacity: 0;
@@ -735,6 +776,15 @@ body.modal-open {
   .countdown-message {
     margin-top: 0.75rem;
     font-size: 0.85rem;
+  }
+
+  .pwa-actions {
+    margin-bottom: 0.5rem;
+  }
+
+  .pwa-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.72rem;
   }
 }
 

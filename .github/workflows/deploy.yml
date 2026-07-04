@@ -27,7 +27,7 @@ jobs:
       - name: Prepare site
         run: |
           mkdir _site
-          cp index.html styles.css script.js crypto.js _site/
+          cp index.html styles.css script.js crypto.js pwa.js sw.js manifest.webmanifest _site/
           cp -r assets _site/
 
       - name: Upload artifact

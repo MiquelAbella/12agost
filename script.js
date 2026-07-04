@@ -182,6 +182,34 @@
     document.body.classList.remove('modal-open');
   }
 
+  function openClueFromParam() {
+    var params = new URLSearchParams(window.location.search);
+    var pista = parseInt(params.get('pista'), 10);
+    if (!pista || !clues || pista < 1 || pista > TOTAL_CLUES) {
+      return;
+    }
+
+    var index = pista - 1;
+    var date = getClueDate(index);
+    if (!isClueUnlocked(date)) {
+      return;
+    }
+
+    openClueModal(pista, formatDate(date), clues[index]);
+    history.replaceState(null, '', window.location.pathname);
+  }
+
+  window.openClueByDay = function (dayNumber) {
+    if (!clues || dayNumber < 1 || dayNumber > TOTAL_CLUES) {
+      return;
+    }
+    var index = dayNumber - 1;
+    var date = getClueDate(index);
+    if (isClueUnlocked(date)) {
+      openClueModal(dayNumber, formatDate(date), clues[index]);
+    }
+  };
+
   menuToggle.addEventListener('click', function () {
     if (menuOverlay.classList.contains('is-open')) {
       closeMenu();
@@ -215,6 +243,7 @@
     .then(function (decryptedClues) {
       clues = decryptedClues;
       buildCluesMenu();
+      openClueFromParam();
     })
     .catch(function () {
       cluesList.innerHTML = '';
