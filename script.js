@@ -113,6 +113,13 @@
     return 'Pista ' + (index - 6);
   }
 
+  function appendMenuSection(title) {
+    const li = document.createElement('li');
+    li.className = 'menu-section';
+    li.textContent = title;
+    cluesList.appendChild(li);
+  }
+
   function buildCluesMenu() {
     cluesList.innerHTML = '';
 
@@ -125,13 +132,20 @@
     }
 
     for (let i = 0; i < TOTAL_CLUES; i++) {
+      if (i === 0) {
+        appendMenuSection('Introducció · 5–11 de juliol');
+      }
+      if (i === 7) {
+        appendMenuSection('Pistes del regal · 12 de juliol – 11 d\'agost');
+      }
+
       const date = getClueDate(i);
       const unlocked = isClueUnlocked(date);
       const dateLabel = formatDate(date);
       const clueLabel = getClueLabel(i);
 
       const li = document.createElement('li');
-      li.className = 'menu-item';
+      li.className = 'menu-item' + (unlocked ? ' menu-item-unlocked' : '');
 
       const btn = document.createElement('button');
       btn.type = 'button';

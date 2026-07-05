@@ -2,8 +2,9 @@
   "name": "Isaura · El teu regal t'espera",
   "short_name": "Isaura",
   "description": "Una aventura de pistes fins al teu aniversari",
-  "start_url": "./",
-  "scope": "./",
+  "id": "/12agost/",
+  "start_url": "/12agost/",
+  "scope": "/12agost/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0f0a12",
@@ -11,19 +12,19 @@
   "lang": "ca",
   "icons": [
     {
-      "src": "assets/icon-192.svg",
+      "src": "/12agost/assets/icon-192.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "assets/icon-512.svg",
+      "src": "/12agost/assets/icon-512.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "assets/icon-512.svg",
+      "src": "/12agost/assets/icon-512.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "maskable"

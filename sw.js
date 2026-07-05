@@ -1,4 +1,4 @@
-var CACHE_NAME = 'isaura-v3';
+var CACHE_NAME = 'isaura-v5';
 var CLUES_START = new Date(2026, 6, 5);
 var TOTAL_CLUES = 38;
 var EARLY_NOTIFY_DELAY_MS = 15 * 60 * 1000;
@@ -10,20 +10,63 @@ var CATALAN_MONTHS = [
 ];
 
 var STATIC_ASSETS = [
-  './',
-  './index.html',
-  './styles.css',
-  './script.js',
-  './crypto.js',
-  './pwa.js',
-  './manifest.webmanifest',
-  './assets/analytics.init.js',
-  './assets/icon-192.svg',
-  './assets/icon-512.svg',
+  'index.html',
+  'styles.css',
+  'script.js',
+  'crypto.js',
+  'pwa.js',
+  'manifest.webmanifest',
+  'assets/analytics.init.js',
+  'assets/icon-192.svg',
+  'assets/icon-512.svg',
 ];
 
 var notifyTimer = null;
 var earlyNotifyTimer = null;
+
+function assetUrl(path) {
+  return new URL(path, self.registration.scope).href;
+}
+
+function cacheUrl(path) {
+  return new URL(path, self.location).href;
+}
+
+function putInCache(request, response) {
+  if (!response || response.status !== 200) {
+    return;
+  }
+  var copy = response.clone();
+  caches.open(CACHE_NAME).then(function (cache) {
+    cache.put(request, copy);
+  });
+}
+
+function networkFirst(request, fallbackPath) {
+  return fetch(request).then(function (response) {
+    putInCache(request, response);
+    return response;
+  }).catch(function () {
+    return caches.match(request).then(function (cached) {
+      if (cached) {
+        return cached;
+      }
+      return caches.match(cacheUrl(fallbackPath));
+    });
+  });
+}
+
+function staleWhileRevalidate(request) {
+  return caches.match(request).then(function (cached) {
+    var networkFetch = fetch(request).then(function (response) {
+      putInCache(request, response);
+      return response;
+    }).catch(function () {
+      return cached;
+    });
+    return cached || networkFetch;
+  });
+}
 
 function startOfDay(date) {
   var copy = new Date(date);
@@ -92,8 +135,8 @@ function dbSet(key, value) {
 function showEarlyClueNotification() {
   return self.registration.showNotification('Isaura · El teu regal t\'espera', {
     body: 'Ja tens la primera pista! Obre l\'app i descobreix-la ♥',
-    icon: './assets/icon-192.svg',
-    badge: './assets/icon-192.svg',
+    icon: assetUrl('assets/icon-192.svg'),
+    badge: assetUrl('assets/icon-192.svg'),
     tag: 'early-clue',
     renotify: true,
     data: { clueIndex: 0, type: 'early-clue' },
@@ -101,10 +144,6 @@ function showEarlyClueNotification() {
 }
 
 function fireEarlyClueNotification() {
-  if (Notification.permission !== 'granted') {
-    return Promise.resolve(false);
-  }
-
   return dbGet('earlyNotifySent').then(function (sent) {
     if (sent) {
       return false;
@@ -132,10 +171,6 @@ function checkEarlyClueNotification() {
 }
 
 function scheduleEarlyClueNotification() {
-  if (Notification.permission !== 'granted') {
-    return Promise.resolve();
-  }
-
   return dbGet('earlyNotifySent').then(function (sent) {
     if (sent) {
       return;
@@ -168,10 +203,6 @@ function scheduleEarlyClueNotification() {
 }
 
 function showFirstCloseNotification() {
-  if (Notification.permission !== 'granted') {
-    return Promise.resolve(false);
-  }
-
   return dbGet('firstCloseNotify').then(function (sent) {
     if (sent) {
       return false;
@@ -179,8 +210,8 @@ function showFirstCloseNotification() {
 
     return self.registration.showNotification('Isaura · El teu regal t\'espera', {
       body: 'Fins demà! La propera pista t\'espera ♥',
-      icon: './assets/icon-192.svg',
-      badge: './assets/icon-192.svg',
+      icon: assetUrl('assets/icon-192.svg'),
+      badge: assetUrl('assets/icon-192.svg'),
       tag: 'first-close',
       data: { type: 'first-close' },
     }).then(function () {
@@ -204,8 +235,8 @@ function showClueNotification(clueIndex) {
 
   return self.registration.showNotification(clueLabel + ' · ' + dateLabel, {
     body: "Bon dia, Isaura! La pista d'avui ja t'espera ♥",
-    icon: './assets/icon-192.svg',
-    badge: './assets/icon-192.svg',
+    icon: assetUrl('assets/icon-192.svg'),
+    badge: assetUrl('assets/icon-192.svg'),
     tag: 'clue-' + todayKey(),
     renotify: true,
     data: { clueIndex: clueIndex },
@@ -218,10 +249,6 @@ function checkAndNotify() {
   }
 
   return self.registration.getNotifications().then(function (existing) {
-    if (Notification.permission !== 'granted') {
-      return false;
-    }
-
     var clueIndex = getTodayClueIndex();
     if (clueIndex === null || !isPastNotifyTime()) {
       return false;
@@ -273,7 +300,13 @@ function scheduleNotifyAlarm() {
 self.addEventListener('install', function (event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function (cache) {
-      return cache.addAll(STATIC_ASSETS);
+      return Promise.all(
+        STATIC_ASSETS.map(function (assetPath) {
+          return cache.add(cacheUrl(assetPath)).catch(function () {
+            return null;
+          });
+        })
+      );
     }).then(function () {
       return self.skipWaiting();
     })
@@ -302,20 +335,20 @@ self.addEventListener('fetch', function (event) {
     return;
   }
 
+  if (event.request.mode === 'navigate') {
+    event.respondWith(networkFirst(event.request, 'index.html'));
+    return;
+  }
+
+  var destination = event.request.destination;
+  if (destination === 'script' || destination === 'style' || destination === 'manifest') {
+    event.respondWith(staleWhileRevalidate(event.request));
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then(function (cached) {
-      var network = fetch(event.request).then(function (response) {
-        if (response && response.status === 200) {
-          var copy = response.clone();
-          caches.open(CACHE_NAME).then(function (cache) {
-            cache.put(event.request, copy);
-          });
-        }
-        return response;
-      });
-      return cached || network;
-    }).catch(function () {
-      return caches.match('./index.html');
+    staleWhileRevalidate(event.request).catch(function () {
+      return caches.match(cacheUrl('index.html'));
     })
   );
 });
@@ -323,6 +356,10 @@ self.addEventListener('fetch', function (event) {
 self.addEventListener('message', function (event) {
   if (!event.data) {
     return;
+  }
+
+  if (event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
 
   if (event.data.type === 'CHECK_NOTIFY') {
@@ -348,9 +385,9 @@ self.addEventListener('message', function (event) {
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
   var clueIndex = event.notification.data && event.notification.data.clueIndex;
-  var url = './';
+  var url = self.registration.scope;
   if (typeof clueIndex === 'number') {
-    url = './?pista=' + (clueIndex + 1);
+    url = url + '?pista=' + (clueIndex + 1);
   }
 
   event.waitUntil(
