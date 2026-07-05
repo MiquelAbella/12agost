@@ -58,6 +58,7 @@
 
       return navigator.serviceWorker.ready.then(function (registration) {
         pingServiceWorker('SCHEDULE_NOTIFY');
+        pingServiceWorker('SCHEDULE_EARLY_NOTIFY');
         return registerPeriodicSync(registration).then(function () {
           updateNotifyBanner('granted');
           return 'granted';
@@ -200,6 +201,7 @@
     }).then(function (registration) {
       if (registration) {
         pingServiceWorker('SCHEDULE_NOTIFY');
+        pingServiceWorker('SCHEDULE_EARLY_NOTIFY');
         registerPeriodicSync(registration);
       }
       startForegroundNotifyCheck();

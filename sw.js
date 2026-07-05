@@ -1,6 +1,7 @@
-var CACHE_NAME = 'isaura-v2';
-var CLUES_START = new Date(2026, 6, 12);
-var TOTAL_CLUES = 31;
+var CACHE_NAME = 'isaura-v3';
+var CLUES_START = new Date(2026, 6, 5);
+var TOTAL_CLUES = 38;
+var EARLY_NOTIFY_DELAY_MS = 15 * 60 * 1000;
 var NOTIFY_HOUR = 7;
 var NOTIFY_MINUTE = 30;
 var CATALAN_MONTHS = [
@@ -22,6 +23,7 @@ var STATIC_ASSETS = [
 ];
 
 var notifyTimer = null;
+var earlyNotifyTimer = null;
 
 function startOfDay(date) {
   var copy = new Date(date);
@@ -87,6 +89,84 @@ function dbSet(key, value) {
   });
 }
 
+function showEarlyClueNotification() {
+  return self.registration.showNotification('Isaura · El teu regal t\'espera', {
+    body: 'Ja tens la primera pista! Obre l\'app i descobreix-la ♥',
+    icon: './assets/icon-192.svg',
+    badge: './assets/icon-192.svg',
+    tag: 'early-clue',
+    renotify: true,
+    data: { clueIndex: 0, type: 'early-clue' },
+  });
+}
+
+function fireEarlyClueNotification() {
+  if (Notification.permission !== 'granted') {
+    return Promise.resolve(false);
+  }
+
+  return dbGet('earlyNotifySent').then(function (sent) {
+    if (sent) {
+      return false;
+    }
+
+    return showEarlyClueNotification().then(function () {
+      return dbSet('earlyNotifySent', true).then(function () { return true; });
+    });
+  });
+}
+
+function checkEarlyClueNotification() {
+  return dbGet('earlyNotifySent').then(function (sent) {
+    if (sent) {
+      return false;
+    }
+
+    return dbGet('earlyNotifyAt').then(function (notifyAt) {
+      if (!notifyAt || Date.now() < notifyAt) {
+        return false;
+      }
+      return fireEarlyClueNotification();
+    });
+  });
+}
+
+function scheduleEarlyClueNotification() {
+  if (Notification.permission !== 'granted') {
+    return Promise.resolve();
+  }
+
+  return dbGet('earlyNotifySent').then(function (sent) {
+    if (sent) {
+      return;
+    }
+
+    return dbGet('earlyNotifyAt').then(function (existingAt) {
+      var notifyAt = existingAt;
+      if (!notifyAt) {
+        notifyAt = Date.now() + EARLY_NOTIFY_DELAY_MS;
+        return dbSet('earlyNotifyAt', notifyAt).then(function () {
+          return notifyAt;
+        });
+      }
+      return notifyAt;
+    }).then(function (notifyAt) {
+      if (earlyNotifyTimer) {
+        clearTimeout(earlyNotifyTimer);
+      }
+
+      var delay = Math.max(0, notifyAt - Date.now());
+      if (delay === 0) {
+        return checkEarlyClueNotification();
+      }
+
+      earlyNotifyTimer = setTimeout(function () {
+        checkEarlyClueNotification();
+      }, delay);
+    });
+  });
+}
+
 function showFirstCloseNotification() {
   if (Notification.permission !== 'granted') {
     return Promise.resolve(false);
@@ -109,13 +189,20 @@ function showFirstCloseNotification() {
   });
 }
 
+function getClueLabel(clueIndex) {
+  if (clueIndex < 7) {
+    return 'Pre-pista ' + (clueIndex + 1);
+  }
+  return 'Pista ' + (clueIndex - 6);
+}
+
 function showClueNotification(clueIndex) {
   var date = new Date(CLUES_START);
   date.setDate(date.getDate() + clueIndex);
-  var dayNumber = clueIndex + 1;
   var dateLabel = formatDate(date);
+  var clueLabel = getClueLabel(clueIndex);
 
-  return self.registration.showNotification('Pista ' + dayNumber + ' · ' + dateLabel, {
+  return self.registration.showNotification(clueLabel + ' · ' + dateLabel, {
     body: "Bon dia, Isaura! La pista d'avui ja t'espera ♥",
     icon: './assets/icon-192.svg',
     badge: './assets/icon-192.svg',
@@ -204,6 +291,7 @@ self.addEventListener('activate', function (event) {
       return self.clients.claim();
     }).then(function () {
       scheduleNotifyAlarm();
+      scheduleEarlyClueNotification();
       return checkAndNotify();
     })
   );
@@ -239,11 +327,17 @@ self.addEventListener('message', function (event) {
 
   if (event.data.type === 'CHECK_NOTIFY') {
     checkAndNotify();
+    checkEarlyClueNotification();
   }
 
   if (event.data.type === 'SCHEDULE_NOTIFY') {
     scheduleNotifyAlarm();
+    scheduleEarlyClueNotification();
     checkAndNotify();
+  }
+
+  if (event.data.type === 'SCHEDULE_EARLY_NOTIFY') {
+    event.waitUntil(scheduleEarlyClueNotification());
   }
 
   if (event.data.type === 'FIRST_CLOSE_NOTIFY') {

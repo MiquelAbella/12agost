@@ -1,7 +1,7 @@
 (function () {
   const TARGET_DATE = new Date('2026-08-12T00:00:00');
-  const CLUES_START = new Date(2026, 6, 12);
-  const TOTAL_CLUES = 31;
+  const CLUES_START = new Date(2026, 6, 5);
+  const TOTAL_CLUES = 38;
 
   const CATALAN_MONTHS = [
     'gener', 'febrer', 'març', 'abril', 'maig', 'juny',
@@ -106,6 +106,13 @@
     }
   }
 
+  function getClueLabel(index) {
+    if (index < 7) {
+      return 'Pre-pista ' + (index + 1);
+    }
+    return 'Pista ' + (index - 6);
+  }
+
   function buildCluesMenu() {
     cluesList.innerHTML = '';
 
@@ -121,7 +128,7 @@
       const date = getClueDate(i);
       const unlocked = isClueUnlocked(date);
       const dateLabel = formatDate(date);
-      const dayNumber = i + 1;
+      const clueLabel = getClueLabel(i);
 
       const li = document.createElement('li');
       li.className = 'menu-item';
@@ -132,17 +139,17 @@
       btn.disabled = !unlocked;
 
       if (unlocked) {
-        btn.setAttribute('aria-label', 'Obrir pista del ' + dateLabel);
+        btn.setAttribute('aria-label', 'Obrir ' + clueLabel.toLowerCase() + ' del ' + dateLabel);
         btn.addEventListener('click', function () {
-          openClueModal(dayNumber, dateLabel, clues[i]);
+          openClueModal(clueLabel, dateLabel, clues[i]);
         });
       } else {
-        btn.setAttribute('aria-label', 'Pista del ' + dateLabel + ', encara bloquejada');
+        btn.setAttribute('aria-label', clueLabel + ' del ' + dateLabel + ', encara bloquejada');
       }
 
       btn.innerHTML =
-        '<span class="menu-item-day">' + dayNumber + '</span>' +
-        '<span class="menu-item-label">' + dateLabel + '</span>' +
+        '<span class="menu-item-day">' + (i < 7 ? '★' : (i - 6)) + '</span>' +
+        '<span class="menu-item-label">' + dateLabel + ' · ' + clueLabel + '</span>' +
         '<span class="menu-item-icon" aria-hidden="true">' + (unlocked ? '→' : '🔒') + '</span>';
 
       li.appendChild(btn);
@@ -166,9 +173,9 @@
     document.body.classList.remove('menu-open');
   }
 
-  function openClueModal(dayNumber, dateLabel, text) {
+  function openClueModal(clueLabel, dateLabel, text) {
     clueModalDate.textContent = dateLabel;
-    clueModalTitle.textContent = 'Pista ' + dayNumber;
+    clueModalTitle.textContent = clueLabel;
     clueModalText.textContent = text;
     clueModal.classList.add('is-open');
     clueModal.setAttribute('aria-hidden', 'false');
@@ -195,7 +202,7 @@
       return;
     }
 
-    openClueModal(pista, formatDate(date), clues[index]);
+    openClueModal(getClueLabel(index), formatDate(date), clues[index]);
     history.replaceState(null, '', window.location.pathname);
   }
 
@@ -206,7 +213,7 @@
     var index = dayNumber - 1;
     var date = getClueDate(index);
     if (isClueUnlocked(date)) {
-      openClueModal(dayNumber, formatDate(date), clues[index]);
+      openClueModal(getClueLabel(index), formatDate(date), clues[index]);
     }
   };
 
