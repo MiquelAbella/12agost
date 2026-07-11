@@ -1,5 +1,6 @@
 var CACHE_NAME = 'isaura-v5';
 var CLUES_START = new Date(2026, 6, 5);
+var PRE_CLUES_COUNT = 8;
 var TOTAL_CLUES = 38;
 var EARLY_NOTIFY_DELAY_MS = 15 * 60 * 1000;
 var NOTIFY_HOUR = 7;
@@ -221,10 +222,10 @@ function showFirstCloseNotification() {
 }
 
 function getClueLabel(clueIndex) {
-  if (clueIndex < 7) {
+  if (clueIndex < PRE_CLUES_COUNT) {
     return 'Pre-pista ' + (clueIndex + 1);
   }
-  return 'Pista ' + (clueIndex - 6);
+  return 'Pista ' + (clueIndex - PRE_CLUES_COUNT + 1);
 }
 
 function showClueNotification(clueIndex) {

@@ -1,7 +1,9 @@
 (function () {
   const TARGET_DATE = new Date('2026-08-12T00:00:00');
   const CLUES_START = new Date(2026, 6, 5);
+  const PRE_CLUES_COUNT = 8;
   const TOTAL_CLUES = 38;
+  const UNLOCK_ALL_CLUES = false;
 
   const CATALAN_MONTHS = [
     'gener', 'febrer', 'març', 'abril', 'maig', 'juny',
@@ -51,6 +53,9 @@
   }
 
   function isClueUnlocked(date) {
+    if (UNLOCK_ALL_CLUES) {
+      return true;
+    }
     return startOfDay(new Date()) >= startOfDay(date);
   }
 
@@ -74,7 +79,9 @@
       hoursEl.textContent = '00';
       minutesEl.textContent = '00';
       secondsEl.textContent = '00';
-      messageEl.textContent = 'Felicitats, Isaura! Avui és el teu dia especial ♥';
+      messageEl.innerHTML =
+        'Avui s\'acaben les pistes. El que et regalo no és una cosa, és un record per a tota la vida. ' +
+        'Preparada per fer un <strong>salt en paracaigudes</strong>? 🪂❤️';
       return;
     }
 
@@ -107,10 +114,10 @@
   }
 
   function getClueLabel(index) {
-    if (index < 7) {
+    if (index < PRE_CLUES_COUNT) {
       return 'Pre-pista ' + (index + 1);
     }
-    return 'Pista ' + (index - 6);
+    return 'Pista ' + (index - PRE_CLUES_COUNT + 1);
   }
 
   function appendMenuSection(title) {
@@ -135,8 +142,8 @@
       if (i === 0) {
         appendMenuSection('Introducció · 5–11 de juliol');
       }
-      if (i === 7) {
-        appendMenuSection('Pistes del regal · 12 de juliol – 11 d\'agost');
+      if (i === PRE_CLUES_COUNT) {
+        appendMenuSection('Pistes del regal · 13 de juliol – 11 d\'agost');
       }
 
       const date = getClueDate(i);
@@ -162,7 +169,7 @@
       }
 
       btn.innerHTML =
-        '<span class="menu-item-day">' + (i < 7 ? '★' : (i - 6)) + '</span>' +
+        '<span class="menu-item-day">' + (i < PRE_CLUES_COUNT ? '★' : (i - PRE_CLUES_COUNT + 1)) + '</span>' +
         '<span class="menu-item-label">' + dateLabel + ' · ' + clueLabel + '</span>' +
         '<span class="menu-item-icon" aria-hidden="true">' + (unlocked ? '→' : '🔒') + '</span>';
 
