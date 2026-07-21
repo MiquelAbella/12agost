@@ -1,6 +1,6 @@
 (function () {
-  const TARGET_DATE = new Date('2026-08-12T00:00:00');
-  const CLUES_START = new Date(2026, 6, 5);
+  const TARGET_DATE = new Date('2026-07-24T00:00:00');
+  const CLUES_START = new Date(2026, 5, 16);
   const PRE_CLUES_COUNT = 8;
   const TOTAL_CLUES = 38;
   const UNLOCK_ALL_CLUES = false;
@@ -28,8 +28,10 @@
   const clueModalDate = document.getElementById('clue-modal-date');
   const clueModalTitle = document.getElementById('clue-modal-title');
   const clueModalText = document.getElementById('clue-modal-text');
+  const clueModalNext = document.getElementById('clue-modal-next');
 
   let clues = null;
+  let currentClueIndex = null;
   let previousValues = { days: '', hours: '', minutes: '', seconds: '' };
 
   function pad(value) {
@@ -140,10 +142,10 @@
 
     for (let i = 0; i < TOTAL_CLUES; i++) {
       if (i === 0) {
-        appendMenuSection('Introducció · 5–11 de juliol');
+        appendMenuSection('Introducció · 16–23 de juny');
       }
       if (i === PRE_CLUES_COUNT) {
-        appendMenuSection('Pistes del regal · 13 de juliol – 11 d\'agost');
+        appendMenuSection('Pistes del regal · 24 de juny – 23 de juliol');
       }
 
       const date = getClueDate(i);
@@ -162,7 +164,7 @@
       if (unlocked) {
         btn.setAttribute('aria-label', 'Obrir ' + clueLabel.toLowerCase() + ' del ' + dateLabel);
         btn.addEventListener('click', function () {
-          openClueModal(clueLabel, dateLabel, clues[i]);
+          openClueModalByIndex(i);
         });
       } else {
         btn.setAttribute('aria-label', clueLabel + ' del ' + dateLabel + ', encara bloquejada');
@@ -194,20 +196,60 @@
     document.body.classList.remove('menu-open');
   }
 
-  function openClueModal(clueLabel, dateLabel, text) {
-    clueModalDate.textContent = dateLabel;
-    clueModalTitle.textContent = clueLabel;
-    clueModalText.textContent = text;
+  function getNextUnlockedIndex(fromIndex) {
+    for (let i = fromIndex + 1; i < TOTAL_CLUES; i++) {
+      if (isClueUnlocked(getClueDate(i))) {
+        return i;
+      }
+    }
+    return null;
+  }
+
+  function updateNextClueButton() {
+    const nextIndex = currentClueIndex !== null
+      ? getNextUnlockedIndex(currentClueIndex)
+      : null;
+    clueModalNext.hidden = nextIndex === null;
+  }
+
+  function openClueModalByIndex(index) {
+    if (!clues || index < 0 || index >= TOTAL_CLUES) {
+      return;
+    }
+
+    const date = getClueDate(index);
+    if (!isClueUnlocked(date)) {
+      return;
+    }
+
+    currentClueIndex = index;
+    clueModalDate.textContent = formatDate(date);
+    clueModalTitle.textContent = getClueLabel(index);
+    clueModalText.textContent = clues[index];
+    updateNextClueButton();
     clueModal.classList.add('is-open');
     clueModal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('modal-open');
     closeMenu();
   }
 
+  function showNextClue() {
+    if (currentClueIndex === null) {
+      return;
+    }
+
+    const nextIndex = getNextUnlockedIndex(currentClueIndex);
+    if (nextIndex !== null) {
+      openClueModalByIndex(nextIndex);
+    }
+  }
+
   function closeClueModal() {
     clueModal.classList.remove('is-open');
     clueModal.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('modal-open');
+    currentClueIndex = null;
+    clueModalNext.hidden = true;
   }
 
   function openClueFromParam() {
@@ -223,7 +265,7 @@
       return;
     }
 
-    openClueModal(getClueLabel(index), formatDate(date), clues[index]);
+    openClueModalByIndex(index);
     history.replaceState(null, '', window.location.pathname);
   }
 
@@ -234,7 +276,7 @@
     var index = dayNumber - 1;
     var date = getClueDate(index);
     if (isClueUnlocked(date)) {
-      openClueModal(getClueLabel(index), formatDate(date), clues[index]);
+      openClueModalByIndex(index);
     }
   };
 
@@ -250,6 +292,7 @@
   menuBackdrop.addEventListener('click', closeMenu);
   clueModalClose.addEventListener('click', closeClueModal);
   clueModalBackdrop.addEventListener('click', closeClueModal);
+  clueModalNext.addEventListener('click', showNextClue);
 
   document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {

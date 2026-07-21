@@ -1,5 +1,5 @@
-var CACHE_NAME = 'isaura-v5';
-var CLUES_START = new Date(2026, 6, 5);
+var CACHE_NAME = 'isaura-v9';
+var CLUES_START = new Date(2026, 5, 16);
 var PRE_CLUES_COUNT = 8;
 var TOTAL_CLUES = 38;
 var EARLY_NOTIFY_DELAY_MS = 15 * 60 * 1000;
